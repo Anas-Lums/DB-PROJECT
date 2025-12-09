@@ -1,0 +1,90 @@
+@page "/enroll"
+@using ZambeelApp.Services
+@using ZambeelApp.Models
+@inject IZambeelService SP_Service
+@inject Service_LINQ LINQ_Service
+@rendermode InteractiveServer
+
+<h3>📚 Course Enrollment</h3>
+
+<div class="alert alert-info">
+    <label>
+        <input type="checkbox" @bind="useLinq" /> 
+        <strong>Use LINQ Implementation?</strong> (Current: @(useLinq ? "LINQ" : "Stored Procedures"))
+    </label>
+</div>
+
+<div class="card p-4" style="max-width: 600px;">
+    <div class="mb-3">
+        <label>Student ID:</label>
+        <input type="number" class="form-control" @bind="studentId" />
+    </div>
+
+    <div class="mb-3">
+        <label>Select Course:</label>
+        <select class="form-control" @bind="selectedCourseId">
+            <option value="0">-- Select Course --</option>
+            @foreach (var c in courses)
+            {
+                <option value="@c.CourseId">@c.Name (@c.CreditHours CH)</option>
+            }
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label>Semester:</label>
+        <input class="form-control" @bind="semester" />
+    </div>
+
+    <button class="btn btn-success" @onclick="HandleEnrollment">Enroll Now</button>
+</div>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="mt-3 alert @(isError ? "alert-danger" : "alert-success")">
+        @message
+    </div>
+}
+
+@code {
+    private int studentId;
+    private int selectedCourseId;
+    private string semester = "Fall 2025";
+    private List<CoursesBefore> courses = new();
+
+    private bool useLinq = false;
+    private string message = "";
+    private bool isError = false;
+
+    protected override void OnInitialized()
+    {
+        // Load courses for dropdown
+        courses = SP_Service.GetAllCourses();
+    }
+
+    private void HandleEnrollment()
+    {
+        if (selectedCourseId == 0 || studentId == 0)
+        {
+            message = "Invalid Student ID or Course Selection.";
+            isError = true;
+            return;
+        }
+
+        // Factory Logic
+        IZambeelService activeService = useLinq ? LINQ_Service : SP_Service;
+
+        var result = activeService.EnrollStudent(studentId, selectedCourseId, semester);
+
+        if (result.StartsWith("Success"))
+        {
+            isError = false;
+            message = result;
+        }
+        else
+        {
+            isError = true;
+            message = result;
+        }
+    }
+}

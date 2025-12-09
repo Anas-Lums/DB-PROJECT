@@ -1,0 +1,50 @@
+@page "/reports"
+@using ZambeelApp.Services
+@inject IZambeelService SP_Service
+@inject Service_LINQ LINQ_Service
+@rendermode InteractiveServer
+
+<h3>💰 Finance Defaulters Report</h3>
+
+<div class="alert alert-info">
+    <label>
+        <input type="checkbox" @bind="useLinq" /> 
+        <strong>Use LINQ Implementation?</strong> (Current: @(useLinq ? "LINQ" : "Stored Procedures"))
+    </label>
+</div>
+
+<button class="btn btn-warning mb-3" @onclick="LoadReport">Generate Report</button>
+
+@if (defaulters != null)
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Student Name</th>
+                <th>Outstanding Amount (PKR)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var d in defaulters)
+            {
+                <tr>
+                    <td>@d.StudentName</td>
+                    <td class="text-danger font-weight-bold">@d.OutstandingAmount.ToString("N2")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private bool useLinq = false;
+    private List<FinanceReportDTO>? defaulters;
+
+    private void LoadReport()
+    {
+        // Factory Logic
+        IZambeelService activeService = useLinq ? LINQ_Service : SP_Service;
+        
+        defaulters = activeService.GetPendingDefaulters();
+    }
+}
